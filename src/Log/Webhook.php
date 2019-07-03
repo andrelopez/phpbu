@@ -50,6 +50,13 @@ class Webhook implements Listener, Logger
     private $username;
 
     /**
+     * Function to make the request (curl or file_get_contents)
+     *
+     * @var string
+     */
+    private $function;
+
+    /**
      * Basic auth password
      *
      * @var string
@@ -121,6 +128,7 @@ class Webhook implements Listener, Logger
             throw new Exception('no uri given');
         }
         $this->uri             = $options['uri'];
+        $this->function          = Arr::getValue($options, 'function', 'curl');
         $this->method          = Arr::getValue($options, 'method', 'GET');
         $this->username        = Arr::getValue($options, 'username', '');
         $this->password        = Arr::getValue($options, 'password', '');
@@ -141,7 +149,11 @@ class Webhook implements Listener, Logger
         $formatter = $this->getBodyFormatter();
         $body      = $formatter->format($result);
 
-        $this->fireRequest($uri, $body);
+        if ($this->function === 'file_get_contents'){
+            $this->fireRequest($uri, $body);
+        }else{
+            $this->fireRequestWithCurl($uri);
+        }
     }
 
     /**
@@ -230,5 +242,25 @@ class Webhook implements Listener, Logger
         } catch (\Throwable $t) {
             throw new Exception('could not reach webhook: ' . $this->uri);
         }
+    }
+
+
+    /**
+     * Execute the request to the webhook uri with curl
+     * @param string $uri
+     */
+    protected function fireRequestWithCurl(string $uri)
+    {
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_AUTOREFERER, TRUE);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_URL, $uri);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+
+        $data = curl_exec($ch);
+
+        curl_close($ch);
     }
 }
