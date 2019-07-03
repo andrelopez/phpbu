@@ -54,7 +54,7 @@ class Webhook implements Listener, Logger
      *
      * @var string
      */
-    private $function;
+    private $requestMethod;
 
     /**
      * Basic auth password
@@ -128,7 +128,7 @@ class Webhook implements Listener, Logger
             throw new Exception('no uri given');
         }
         $this->uri             = $options['uri'];
-        $this->function          = Arr::getValue($options, 'function', 'curl');
+        $this->requestMethod   = Arr::getValue($options, 'requestMethod', 'curl');
         $this->method          = Arr::getValue($options, 'method', 'GET');
         $this->username        = Arr::getValue($options, 'username', '');
         $this->password        = Arr::getValue($options, 'password', '');
@@ -149,7 +149,7 @@ class Webhook implements Listener, Logger
         $formatter = $this->getBodyFormatter();
         $body      = $formatter->format($result);
 
-        if ($this->function === 'file_get_contents'){
+        if ($this->requestMethod === 'file_get_contents'){
             $this->fireRequest($uri, $body);
         }else{
             $this->fireRequestWithCurl($uri);
